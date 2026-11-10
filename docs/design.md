@@ -27,20 +27,7 @@ Nov 10, 2026 · @Ziv
 
 ## מילון מונחים
 
-זו הטיוטה הראשונה של `GLOSSARY.md`. השמות האלה הם גם שמות הטבלאות, הטיפוסים והטיקטים, כדי שאתה והסוכן תדברו באותה שפה.
-
-| מונח | הגדרה | לא להשתמש ב |
-| --- | --- | --- |
-| **Capture** | פריט גולמי אחד שנשמר כמו שהוא: טקסט, קישור או צילום מסך. | post, item |
-| **Source** | מאיפה ה-Capture הגיע: פוסט, תגובה, כתבה, וידאו, או ראיון שלך. | origin |
-| **Insight** | טענה מובנית אחת על תהליך ראיונות, שחולצה מ-Capture. Capture אחד מניב אפס עד הרבה Insights. | record, row, fact |
-| **Speaker** | מי שאמר את ה-Insight, ובאיזה תפקיד: מנהל מגייס, מגייסת, מועמד, עיתונאי. | author, user |
-| **Credibility** | דירוג אמינות של Insight, שנגזר מתפקיד ה-Speaker ומהאם זה מידע מיד ראשונה. | score, trust |
-| **Stage** | שלב בתהליך: סינון קו״ח, שיחת HR, ראיון טכני, system design, מנהל, הצעה. | round, step |
-| **Format** | איך השלב מתנהל: live coding, AI-assisted, מטלת בית, דיון על עבודה קודמת. | type |
-| **Brief** | תדריך שנוצר לפי דרישה לחברה או לתפקיד, מתוך ה-Insights הרלוונטיים. | summary, report |
-| **Interview Report** | Capture שאתה כותב אחרי ראיון שלך. ה-Source האמין ביותר. | feedback |
-| **Golden Set** | Captures שתייגת ידנית עם ה-Insights הצפויים, למדידת החילוץ. | test data |
+המילון חי ב-[`GLOSSARY.md`](../GLOSSARY.md) בשורש הריפו, והוא המקור היחיד למונחים. השמות שם הם גם שמות הטבלאות, הטיפוסים והטיקטים: Capture, Source, Interview Report, Insight, Extraction Run, Verdict, Speaker, Credibility, Stage, Format, Role, Seniority, Brief, Golden Set.
 
 ## System design
 
@@ -52,16 +39,16 @@ Nov 10, 2026 · @Ziv
 
 1. אתה משתף לבוט טקסט, קישור או צילום מסך.
 2. טלגרם שולח webhook ל-Worker. ה-Worker בודק שהשולח הוא אתה (allowlist של Telegram user id).
-3. נשמר Capture בסטטוס `pending`, והתמונה (אם יש) עולה ל-object storage. הבוט עונה «נשמר».
-4. ה-Extractor שולח את ה-Capture ל-Claude Haiku עם סכמת פלט מובנית, ושומר את ה-Insights.
-5. ה-Capture עובר ל-`extracted`, והבוט שולח לך מה חולץ כדי שתוכל לתקן.
-6. אם החילוץ נכשל, cron שעתי אוסף את כל מה שנשאר `pending` ומנסה שוב. ה-DB הוא התור, בלי תשתית queue נפרדת.
+3. נשמר Capture, והתמונות (אם יש) עולות ל-object storage. אלבום של כמה צילומים הוא Capture אחד. אם ה-hash של התוכן כבר קיים, הבוט עונה «כבר שמור» ועוצר. אחרת הוא עונה «נשמר». קישור בלי טקסט נשמר, והבוט מבקש שתדביק את הטקסט או תשלח צילום.
+4. בתוך `ctx.waitUntil`, ה-Extractor שולח את ה-Capture ל-Claude Haiku עם סכמת פלט מובנית. כל ניסיון נרשם כ-Extraction Run (הצליח / נכשל), וה-Insights נשמרים תחת הריצה.
+5. הבוט שולח לך מה חולץ, עם כפתורי 👍 / 👎. ה-Verdict נשמר על הריצה, ו-👎 הופך את ה-Capture למועמד ל-Golden Set. אין עריכה ידנית של Insights.
+6. cron שעתי אוסף Captures בלי ריצה מוצלחת ומנסה שוב, עד 3 כישלונות. ה-DB הוא התור, בלי תשתית queue נפרדת ([ADR-0002](adr/0002-immutable-captures-derived-status.md)).
 
 **זרימת תדריך**
 
 1. אתה שולח `/brief Wiz backend senior`.
-2. שליפת Insights לפי חברה, ובנוסף Insights כלליים על אותו תפקיד מהחודשים האחרונים, ממוינים לפי Credibility ותאריך.
-3. Claude Sonnet מסכם ל-Brief. כל טענה בתדריך מצביעה על ה-Capture שממנו היא באה.
+2. שליפת ה-Insights הנוכחיים (מהריצה המוצלחת האחרונה של כל Capture) בשתי קבוצות: כל ה-Insights של החברה, ו-Insights כלליים (בלי חברה) על אותו Role או בלי Role מ-6 החודשים האחרונים. כל קבוצה ממוינת לפי Credibility ואז לפי `said_at`, ואם אין, לפי `captured_at`. חברה לא מוכרת: הבוט אומר זאת ושולח תדריך שוק בלבד.
+3. Claude Sonnet מסכם ל-Brief. כל טענה בתדריך מצביעה על ה-Capture שממנו היא באה, וטענות שהתאריך שלהן משוער מסומנות. ה-Brief נרשם בטבלת `briefs` ולא משמש כ-cache.
 
 **הרכיבים**
 
@@ -75,20 +62,22 @@ Nov 10, 2026 · @Ziv
 | Sweeper | ניסיון חוזר ל-`pending`, ובהמשך איסוף ממקורות פתוחים | Cron Trigger על אותו Worker |
 | Evals | הרצת ה-Golden Set והשוואה לצפוי | סקריפט מקומי |
 
-**Seams לבדיקות.** שניים בלבד: הפונקציה `extract(capture)` של ה-Extractor, וה-handler של ה-webhook מקצה לקצה מול DB של בדיקות. כל השאר נבדק דרכם.
+**Seams לבדיקות.** שניים בלבד: הפונקציה `extract(capture)` של ה-Extractor, וה-handler של ה-webhook מקצה לקצה מול DB של בדיקות. ה-DB של הבדיקות הוא PGlite (Postgres ב-WASM בתוך תהליך הבדיקה), DB חדש לכל קובץ בדיקה, עם אותן מיגרציות. כל השאר נבדק דרכם.
 
 ## מודל נתונים
 
-ארבע טבלאות ב-MVP. ערכי ה-enum באנגלית, הציטוטים בשפת המקור.
+שש טבלאות ב-MVP. ערכי ה-enum באנגלית, הציטוטים בשפת המקור.
 
 | טבלה | שדות עיקריים | הערות |
 | --- | --- | --- |
-| `captures` | id, kind (text / url / image / interview\_report), raw\_text, image\_path, source\_url, source\_type, status (pending / extracted / failed), captured\_at | לא נמחק ולא משתנה אחרי השמירה |
-| `insights` | id, capture\_id, company\_id (nullable), role, seniority, stage, format, ai\_allowed (yes / no / unknown), what\_is\_tested, questions\[\], quote, speaker\_role, speaker\_name, first\_hand, credibility, said\_at, extraction\_run\_id | Insight בלי חברה הוא חוקי: תובנה כללית על השוק |
-| `companies` | id, name, aliases\[\] | כדי ש-Wiz, wiz.io ווויז יהיו אותה חברה |
-| `extraction_runs` | id, capture\_id, model, prompt\_version, input\_tokens, output\_tokens, cost\_usd, created\_at | מאפשר מעקב עלויות וחילוץ מחדש לפי גרסת פרומפט |
+| `captures` | id, kind (text / url / image), raw\_text, image\_paths\[\], source\_url, source\_type (… / interview\_report), content\_hash (unique), captured\_at | לא נמחק ולא משתנה. אין עמודת status: הסטטוס נגזר מ-`extraction_runs` ([ADR-0002](adr/0002-immutable-captures-derived-status.md)) |
+| `extraction_runs` | id, capture\_id, model, prompt\_version, outcome (succeeded / failed), error, verdict (up / down / none), input\_tokens, output\_tokens, cost\_usd, created\_at | `prompt_version` הוא hash של טקסט הפרומפט וסכמת הפלט. רק הריצה המוצלחת האחרונה של Capture נוכחית |
+| `insights` | id, extraction\_run\_id, company\_id (nullable), role, seniority, stage (nullable), format, ai\_allowed (yes / no / unknown), what\_is\_tested, questions\[\], quote, speaker\_role, speaker\_name, first\_hand, said\_at (nullable) | לכל היותר Stage אחד ל-Insight. Insight בלי חברה הוא חוקי: תובנה כללית על השוק. role ו-seniority מרשימה סגורה (ראו `GLOSSARY.md`) |
+| `companies` | id, name, normalized\_name (unique), aliases\[\] | חברה חדשה נוצרת אוטומטית לפי שם מנורמל. aliases נכנסים בטיקט 9 |
+| `golden_cases` | capture\_id, expected\_insights (jsonb), labelled\_at | מחוץ ל-git ([ADR-0005](adr/0005-public-repo-no-capture-content.md)). ה-eval runner קורא ישירות מכאן |
+| `briefs` | id, query, company\_id, role, text, insight\_ids\[\], model, cost\_usd, created\_at | רישום בלבד, לא cache |
 
-**חישוב Credibility (גרסה ראשונה, פשוטה בכוונה):**
+**חישוב Credibility (גרסה ראשונה, פשוטה בכוונה).** מחושב בקוד מתוך Source type, תפקיד ה-Speaker ו-first\_hand, ולא נשמר ולא מופק על ידי המודל ([ADR-0003](adr/0003-credibility-computed-not-extracted.md)):
 
 - 5: Interview Report שלך
 - 4: מנהל מגייס או מגייסת שמתארים את התהליך שלהם
@@ -142,12 +131,16 @@ interview-intel/
 | 6 | Haiku לחילוץ, Sonnet לתדריך | המודל הזול ביותר שעובר את ה-Golden Set. ההחלטה נבחנת מחדש מול ה-evals |
 | 7 | משתמש יחיד ב-allowlist | אין auth עד שלב הפלטפורמה |
 
-**פתוח, להכריע ב-`/grill-with-docs`**
+**הוכרע ב-`/grill-with-docs` (10.11.2026)**
 
-- [ ] Cloudflare Workers + Supabase (ההצעה כאן), או הכול ב-Supabase עם Edge Functions ו-pg\_cron. ספק אחד פשוט יותר לתפעול; Workers נפוץ יותר בשוק ושווה כניסיון.
-- [ ] Issue tracker: GitHub Issues או קבצי markdown מקומיים תחת `.scratch/`. לפרויקט שיהפוך לפורטפוליו, GitHub Issues נראה טוב יותר.
-- [ ] ריפו ציבורי או פרטי. הקוד יכול להיות ציבורי; ה-Golden Set מכיל טקסטים של אנשים אחרים ולכן נשאר מחוץ ל-git.
-- [ ] איך מטפלים בקישור בלי טקסט: הבוט מבקש שתדביק את הטקסט, או מנסה למשוך את העמוד כשהמקור הוא כתבה פתוחה.
+- [x] Cloudflare Workers + Supabase, עם חילוץ ב-`ctx.waitUntil`: [ADR-0001](adr/0001-cloudflare-workers-and-supabase.md)
+- [x] Issue tracker: GitHub Issues (`docs/agents/issue-tracker.md`)
+- [x] ריפו ציבורי, בלי תוכן של Captures ב-git: [ADR-0005](adr/0005-public-repo-no-capture-content.md)
+- [x] קישור בלי טקסט: נשמר, והבוט מבקש להדביק טקסט או צילום. משיכת עמודים נדחית לטיקט 10
+- [x] Capture לא משתנה, הסטטוס נגזר מ-Extraction Runs: [ADR-0002](adr/0002-immutable-captures-derived-status.md)
+- [x] Credibility מחושב בקוד: [ADR-0003](adr/0003-credibility-computed-not-extracted.md)
+- [x] לינקדאין ו-Glassdoor רק בלכידה ידנית: [ADR-0004](adr/0004-manual-capture-only-for-linkedin.md)
+- [x] Evals: התאמה לפי (חברה, Stage), שדות סגורים בהשוואה מדויקת, שדות חופשיים ב-Sonnet judge (0/1). שער ה-merge: הציון לא יורד מתחת ל-`main`. סף מוחלט ייקבע אחרי שיהיו מספרים אמיתיים
 
 ## Roadmap
 
@@ -157,15 +150,17 @@ interview-intel/
 
 | # | טיקט | חסום על ידי | מה עובד בסוף |
 | --- | --- | --- | --- |
-| 1 | שלד מהלך: הודעת טקסט נשמרת כ-Capture | — | שולח טקסט לבוט, רואה שורה ב-DB, מקבל «נשמר». פרוס ורץ |
-| 2 | חילוץ Insights מטקסט | 1 | הבוט עונה מה חילץ: חברה, פורמט, מה נבדק, מי אמר |
-| 3 | Golden Set ו-eval runner | 2 | פקודה אחת מדפיסה ציון חילוץ על 20 Captures מתויגים |
-| 4 | לכידת צילום מסך | 2 | צילום של פוסט ותגובות הופך ל-Insights, התמונה נשמרת |
-| 5 | פקודת `/brief` | 2 | תדריך לחברה או לתפקיד עם קישורים למקורות |
-| 6 | עמידות ועלות: cron לניסיון חוזר, רישום `extraction_runs`, פקודת `/cost` | 2 | כישלון API לא מאבד פריט, ורואים כמה הוצאת |
+| 1 | שלד מהלך: הודעת טקסט נשמרת כ-Capture, כולל content hash וטבלת `extraction_runs` (ריקה) | — | שולח טקסט לבוט, רואה שורה ב-DB, מקבל «נשמר», ועל אותו טקסט שוב «כבר שמור». פרוס ורץ |
+| 2 | חילוץ Insights מטקסט, עם כפתורי 👍 / 👎 ו-Verdict | 1 | הבוט עונה מה חילץ: חברה, פורמט, מה נבדק, מי אמר. 👎 מסמן מועמד ל-Golden Set |
+| 3 | Golden Set ו-eval runner: טבלת `golden_cases` וכללי הציון | 2 | פקודה אחת מדפיסה ציון כללי וציון לכל שדה על 20 Captures מתויגים |
+| 4 | לכידת צילום מסך, כולל אלבום כ-Capture אחד | 2 | צילומי פוסט ותגובות הופכים ל-Insights, התמונות נשמרות |
+| 5 | פקודת `/brief`, עם רישום בטבלת `briefs` | 2 | תדריך לחברה או לתפקיד עם קישורים למקורות |
+| 6 | עמידות ועלות: cron לניסיון חוזר עם תקרה של 3 כישלונות, פקודות `/failed` ו-`/cost` | 2 | כישלון API לא מאבד פריט, ורואים כמה הוצאת |
 | 7 | Interview Report: שאלון קצר בבוט אחרי ראיון | 2 | הראיונות שלך נכנסים למאגר ב-Credibility 5 |
 
 טיקט נוסף לשלב 1, **8: שרת MCP מעל ה-DB** (חסום על ידי 2). בסופו אתה שואל את Claude בצ׳אט או ב-Claude Code שאלות חופשיות על המאגר, בלי לבנות UI. בעקבות זה הטיקטים של שלב 2 ממוספרים 9 עד 13.
+
+לטיקטים 7 ו-8, ולכל שלב 2, יש שאלות עיצוב פתוחות. כל אחד מהם יעבור `/grill-with-docs` משלו כשמתחילים אותו.
 
 **סדר מוצע:** 1 ו-2 בסופ״ש הראשון, ומאותו רגע לוכדים פריטים אמיתיים. אחר כך 5, כי התדריך הוא הערך שאתה צריך לראיונות. אחר כך 3, כי רק אחרי כמה עשרות Captures אמיתיים יש ממה לבנות Golden Set. 4, 6, 7 ו-8 לפי מה שכואב.
 
