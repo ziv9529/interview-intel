@@ -1,0 +1,8 @@
+# Copy to .dev.vars at the repo root (git-ignored), or run ./scripts/setup-accounts.sh.
+TELEGRAM_BOT_TOKEN=123456:replace-me
+# Any random string; pass the same value as secret_token to setWebhook.
+TELEGRAM_WEBHOOK_SECRET=replace-me
+# Your Telegram user id (comma-separate to allow more than one).
+TELEGRAM_ALLOWED_USER_ID=111111111
+# Postgres connection string (Supabase pooled URL, or a local Postgres).
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres
