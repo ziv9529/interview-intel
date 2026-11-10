@@ -4,7 +4,7 @@ import { captureFromText } from "@interview-intel/domain";
 export type Env = {
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_WEBHOOK_SECRET: string;
-  ALLOWED_USER_IDS: string;
+  TELEGRAM_ALLOWED_USER_ID: string;
   DATABASE_URL: string;
 };
 
@@ -50,7 +50,7 @@ export function createWorker(connect: Connect) {
 }
 
 function isAllowed(env: Env, userId: number): boolean {
-  return env.ALLOWED_USER_IDS.split(",").map((id) => id.trim()).includes(String(userId));
+  return env.TELEGRAM_ALLOWED_USER_ID.split(",").map((id) => id.trim()).includes(String(userId));
 }
 
 async function sendMessage(env: Env, chatId: number, text: string): Promise<void> {

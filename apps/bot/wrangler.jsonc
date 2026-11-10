@@ -3,5 +3,5 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat"]
-  // Secrets come from .dev.vars locally and `wrangler secret put` in production.
+  // Secrets come from the root .dev.vars locally (pnpm dev) and `wrangler secret put` in production.
 }

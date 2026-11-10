@@ -7,7 +7,7 @@ const OWNER = 111;
 const env: Env = {
   TELEGRAM_BOT_TOKEN: "test-token",
   TELEGRAM_WEBHOOK_SECRET: "test-secret",
-  ALLOWED_USER_IDS: `${OWNER}`,
+  TELEGRAM_ALLOWED_USER_ID: `${OWNER}`,
   DATABASE_URL: "unused",
 };
 
